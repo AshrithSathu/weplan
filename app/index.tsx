@@ -1,10 +1,12 @@
 import Login from "@/components/login/Login";
-import { Stack, useRouter } from "expo-router";
+import { auth } from "@/Configs/FirebaseConfig";
+import { Redirect, Stack, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { SafeAreaView, Text, View } from "react-native";
 
 export default function Index() {
   const router = useRouter();
+  const user = auth.currentUser;
 
   // setTimeout(() => {
   //   router.push("auth/signIn");
@@ -21,7 +23,7 @@ export default function Index() {
       }}
     >
       <Stack.Screen options={{ headerShown: false }} />
-      <Login />
+      {user ? <Redirect href={"(tabs)/mytrip"} /> : <Login />}
     </View>
     // </SafeAreaView>
   );

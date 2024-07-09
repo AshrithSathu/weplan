@@ -5,17 +5,66 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { Stack, useRouter } from "expo-router";
 import { Entypo } from "@expo/vector-icons";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/Configs/FirebaseConfig";
 
 const SignUp = () => {
   const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [err, setErr] = useState("");
+
+  const onAccountCreation = () => {
+    if (password !== confirmPassword) {
+      setPasswordsMatch(false);
+      return;
+    }
+    if (!username || !email || !password || !confirmPassword) {
+      setErr("Please fill all the fields");
+      return;
+    }
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Signed up
+        const user = userCredential.user;
+        console.log(user);
+        router.navigate("auth/signIn");
+        // You can also save the username to your database here
+        // ...
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        setErr(errorMessage);
+        console.log(errorCode, errorMessage);
+        // ..
+      });
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    setPasswordsMatch(text === confirmPassword);
+    setErr(""); // Clear error message
+  };
+
+  const handleConfirmPasswordChange = (text: string) => {
+    setConfirmPassword(text);
+    setPasswordsMatch(text === password);
+    setErr(""); // Clear error message
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.backbutton}>
-        <TouchableOpacity onPress={() => router.push("/")}>
+        <TouchableOpacity onPress={() => router.navigate("/")}>
           <Entypo name="back" size={24} color="black" />
         </TouchableOpacity>
       </View>
@@ -24,34 +73,69 @@ const SignUp = () => {
         <Text style={styles.subText}>Join us today</Text>
       </View>
       <View style={styles.inputContainer}>
+        <Text style={styles.heading}>Username</Text>
+        <TextInput
+          style={styles.textInput}
+          placeholder="Username"
+          value={username}
+          onChangeText={(text) => {
+            setUsername(text);
+            setErr(""); // Clear error message
+          }}
+        />
+      </View>
+      <View style={styles.inputContainer}>
         <Text style={styles.heading}>Email</Text>
         <TextInput
           style={styles.textInput}
           placeholder="Email"
           textContentType="emailAddress"
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            setErr(""); // Clear error message
+          }}
         />
       </View>
       <View style={styles.inputContainer}>
         <Text style={styles.heading}>Password</Text>
         <TextInput
-          style={styles.textInput}
+          style={[
+            styles.textInput,
+            !passwordsMatch && password && confirmPassword
+              ? { borderColor: "red" }
+              : null,
+          ]}
           placeholder="Password"
           textContentType="password"
           secureTextEntry={true}
+          value={password}
+          onChangeText={handlePasswordChange}
         />
       </View>
       <View style={styles.inputContainer}>
         <Text style={styles.heading}>Confirm Password</Text>
         <TextInput
-          style={styles.textInput}
+          style={[
+            styles.textInput,
+            !passwordsMatch && password && confirmPassword
+              ? { borderColor: "red" }
+              : null,
+          ]}
           placeholder="Confirm Password"
           textContentType="password"
           secureTextEntry={true}
+          value={confirmPassword}
+          onChangeText={handleConfirmPasswordChange}
         />
       </View>
+      {!passwordsMatch && password && confirmPassword && (
+        <Text style={styles.errorText}>Passwords do not match</Text>
+      )}
+      {err && <Text style={styles.errorText}>{err}</Text>}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>SignUp</Text>
+        <TouchableOpacity style={styles.button} onPress={onAccountCreation}>
+          <Text style={styles.buttonText}>Create Account</Text>
         </TouchableOpacity>
         <Text>Or</Text>
         <TouchableOpacity
@@ -123,11 +207,15 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
-    width: "48%",
+    width: "80%",
   },
   buttonText: {
     color: "white",
     fontSize: 16,
     fontFamily: "outfitMedium",
+  },
+  errorText: {
+    color: "red",
+    marginTop: 10,
   },
 });

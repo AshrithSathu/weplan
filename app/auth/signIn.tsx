@@ -5,17 +5,47 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { Stack, useRouter } from "expo-router";
 import { Entypo } from "@expo/vector-icons";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/Configs/FirebaseConfig";
 
 const SignIn = () => {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const onSignIn = () => {
+    if (!email || !password) {
+      setError("Please fill in both email and password fields.");
+      return;
+    }
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Signed in
+        const user = userCredential.user;
+        console.log(user);
+        router.navigate("(tabs)/mytrip");
+        // Clear error message
+        setError("");
+        // Navigate to the next screen or perform other actions
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        // Set error message
+        setError(errorMessage);
+      });
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.backbutton}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.navigate("/")}>
           <Entypo name="back" size={24} color="black" />
         </TouchableOpacity>
       </View>
@@ -30,6 +60,11 @@ const SignIn = () => {
           style={styles.textInput}
           placeholder="Email"
           textContentType="emailAddress"
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            setError(""); // Clear error message
+          }}
         />
       </View>
       <View style={styles.inputContainer}>
@@ -39,10 +74,16 @@ const SignIn = () => {
           placeholder="Password"
           textContentType="password"
           secureTextEntry={true}
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            setError(""); // Clear error message
+          }}
         />
       </View>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity style={styles.button} onPress={onSignIn}>
           <Text style={styles.buttonText}>SignIn</Text>
         </TouchableOpacity>
         <Text>Or</Text>
@@ -52,7 +93,7 @@ const SignIn = () => {
             router.navigate("auth/signUp");
           }}
         >
-          <Text style={styles.buttonText}>SignUp</Text>
+          <Text style={styles.buttonText}>Create Account</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -115,11 +156,15 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
-    width: "48%",
+    width: "80%",
   },
   buttonText: {
     color: "white",
     fontSize: 16,
     fontFamily: "outfitMedium",
+  },
+  errorText: {
+    color: "red",
+    marginTop: 10,
   },
 });
